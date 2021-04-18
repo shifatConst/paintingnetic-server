@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
+const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config()
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.n5sag.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
@@ -89,6 +90,23 @@ client.connect(err => {
             })
     })
 
+    app.post('/isAdmin', (req, res) => {
+        const email = req.body.email;
+        adminCollection.find({ email: email })
+            .toArray((err, admins) => {
+                res.send(admins.length > 0);
+            })
+    })
+
+    app.get('/allAdmin', (req, res) => {
+        adminCollection.find({})
+        .toArray((err, items) => {
+            console.log(err);
+            res.send(items);
+            console.log('form database', items);
+        })
+    })
+
     app.get('/services', (req, res) => {
         ServiceCollection.find({})
         .toArray((err, items) => {
@@ -106,6 +124,39 @@ client.connect(err => {
             console.log('form database', items);
         })
     })
+
+    app.get('/services/:id', (req, res) => {
+        ServiceCollection.find({_id: ObjectId (req.params.id)})
+        .toArray((err, items) => {
+            console.log(err);
+            res.send(items[0]);
+        })
+    })
+
+    app.get('/order', (req, res) => {
+        appointmentCollection.find({email: req.query.email})
+        .toArray((err, order) => {
+            res.send(order);
+            console.log(err);
+        })
+    })
+
+    app.delete('/deleteServices/:id', (req, res) => {
+        const id = ObjectId(req.params.id);
+        ServiceCollection.findOneAndDelete({_id: id})
+        .then(app => res.send(app.value))
+    })
+
+    app.patch('/update/:id', (req, res) => {
+        appointmentCollection.updateOne({_id: ObjectId(req.params.id)},
+        {
+          $set: {status: req.body.price}
+        })
+        .then (result => {
+          res.send(result.modifiedCount > 0)
+        })
+      })
+      
 });
 
 
